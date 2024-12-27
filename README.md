@@ -103,7 +103,7 @@ The application will regenerate the podcast, preserving unmodified segments and 
 - [ ] Add local TTS provider
 - [ ] Add podcast generation format options: interview, narrative, etc.
 - [x] Add podcast generation from multiple source files
-- [ ] Add more agent roles to the studio. For example, a "Content Curator" or "Content Researcher" that uses tools to find and curate content before being analyzed. Or a "Sponsor" agent that adds segways to ads in the podcast script ([à la LTT](https://www.youtube.com/live/EefvOLKoXdg?si=G1714t2jK4ZIvao0&t=5307)).
+- [ ] Add more agent roles to the studio. For example, a "Content Curator" or "Content Researcher" that uses tools to find and curate content before being analyzed. Or a "Sponsor" agent that writes sague into ads sections in the podcast script ([à la LTT](https://www.youtube.com/live/EefvOLKoXdg?si=G1714t2jK4ZIvao0&t=5307)).
 - [ ] Add music and sound effects options
 - [ ] Real-time podcast generation with human and AI collaboration (🤔)
 
