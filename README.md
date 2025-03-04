@@ -19,7 +19,7 @@ NeuralNoise is an AI-powered podcast studio that uses multiple AI agents working
 
 ## Features
 
-- 🔍 Content analysis, script generation, and content edition using [AutoGen](https://github.com/microsoft/autogen) group chat of agents
+- 🔍 Content analysis, script generation, and content edition using [AG2](https://github.com/ag2ai/ag2) group chat of agents
 - 📢 High-quality voice synthesis with [ElevenLabs](https://elevenlabs.io/api) or [OpenAI](https://platform.openai.com/docs/guides/text-to-speech)
 - 🔉 Audio processing and manipulation with [pydub](https://github.com/jiaaro/pydub)
 - 📜 Easy way to [manually edit parts of the script](#want-to-edit-the-generated-script) and regenerate the podcast
