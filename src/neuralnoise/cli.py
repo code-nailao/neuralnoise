@@ -45,7 +45,7 @@ def generate(
     output_dir = Path("output") / name
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    content_path = output_dir / "content.txt"
+    content_path = output_dir / "content.md"
 
     if content_path.exists():
         with open(content_path, "r") as f:
@@ -61,7 +61,7 @@ def generate(
         typer.secho(f"Extracting content from inputs {input}", fg=typer.colors.YELLOW)
         content = extract_content(input)
 
-        with open(output_dir / "content.txt", "w") as f:
+        with open(content_path, "w") as f:
             f.write(content)
 
     typer.secho(f"Generating podcast episode {name}", fg=typer.colors.GREEN)

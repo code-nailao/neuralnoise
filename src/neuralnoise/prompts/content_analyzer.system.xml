@@ -7,27 +7,9 @@
     <instruction>Remember to create a final section with conclusions and podcast wrap-up.</instruction>
     <instruction>Create sections that cover the main points and arguments of the content.</instruction>
     <instruction>The user will write the content in the XML tag named <![CDATA[ <content> ... </content> ]]></instruction>
-    <instruction>If there are multiple content documents, you'll receive them enclosed individually
-      in an XML tag named <![CDATA[ <document> ... </document> ]]></instruction>
   </instructions>
   <output-format>
-    Provide your analysis in JSON format that conforms to the following TypeScript interface:
-
-  <![CDATA[
-      interface ContentAnalysis {
-        title: string;
-        summary: string;
-        keyPoints: string[];
-        tone: string;
-        targetAudience: string;
-        potentialSegments: {
-          topic: string;
-          duration: number;
-          discussionPoints: string[];
-        }[];
-        controversialTopics: string[];
-      }
-    ]]>
+    Provide your analysis in JSON format that conforms to the ContentAnalysis schema.
   </output-format>
   <language>
     ${language}

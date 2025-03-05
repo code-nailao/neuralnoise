@@ -136,7 +136,10 @@ async def _extract_multiple_sources(
         *[_extract_single_source(source, use_async=use_async) for source in sources]
     )
 
-    return "\n\n".join(f"<document>\n{content}\n</document>" for content in contents)
+    return "\n\n".join(
+        f"# Document START: {source}\n\n{content}\n\n# Document END: {source}\n\n"
+        for source, content in zip(sources, contents)
+    )
 
 
 # Public API functions

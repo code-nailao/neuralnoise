@@ -110,5 +110,7 @@ Thumbs.db
 .cursorrules
 
 # Project-specific
+chroma/
 data/
 output/
+parsed_docs/

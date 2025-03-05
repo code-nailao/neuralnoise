@@ -6,7 +6,6 @@
 
   <instructions>
     <instruction>Evaluate structure, depth, transitions, and dialogue naturalness</instruction>
-    <instruction>Limit iterations to 2 per generated section</instruction>
     <instruction>Ensure natural conversation flow</instruction>
     <instruction>Avoid formal introductions/conclusions for sections</instruction>
     <instruction>Encourage quick interactions and questions between speakers</instruction>
@@ -15,21 +14,17 @@
     <instruction>Content flow and engagement: make sure to not talk about the last topic in the the
       introductions. Engage the user introducing the topics slowly</instruction>
     <instruction>Ask the ScriptGeneratorAgent to generate a few more segments with reactions or
-      questions if
-      needed.</instruction>
+      questions if needed.</instruction>
   </instructions>
 
   <output-format>
     Provide concise editing suggestions.
-    Alternatively, if the script is approved, conclude with 'EDITOR-OK'.
   </output-format>
 
   <important-notes>
-    <important> Only the EditorAgent can write "EDITOR-OK"</important>
     <important>Focus on the latest script version from the ScriptGeneratorAgent</important>
     <important>If you provide editing suggestions, the ScriptGeneratorAgent will generate a new
-      script based on your suggestions. Don't say EDITOR-OK in this case.</important>
-    <important>PlannerAgent proceeds to the next section after "EDITOR-OK"</important>
+      script based on your suggestions.</important>
   </important-notes>
   <language>
     ${language}
