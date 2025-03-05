@@ -1,19 +1,15 @@
-import json
 import logging
-from pathlib import Path
 from typing import Any
 
 from autogen import AssistantAgent, SwarmResult
 
 from neuralnoise.models import PodcastScript
 from neuralnoise.studio.agents.context_manager import SharedContext
-from neuralnoise.studio.hooks import save_last_json_message_hook
 
 
 def create_script_generator_agent(
     system_msg: str,
     llm_config: dict,
-    work_dir: Path,
     next_agent: AssistantAgent | str | None = None,
 ) -> AssistantAgent:
     """Create and return a ScriptGeneratorAgent that writes a section script.
@@ -41,6 +37,7 @@ def create_script_generator_agent(
         Returns:
             SwarmResult: Result containing success message and next agent
         """
+        logger.info("Writing script to shared context")
         shared_state = SharedContext.model_validate(context_variables)
 
         # Validate and convert to model if not already
@@ -51,19 +48,6 @@ def create_script_generator_agent(
 
         # Update the shared context with the generated script
         shared_state.update_section_script(script_dict)
-
-        # Save script to disk via hook
-        try:
-            hook = save_last_json_message_hook("script_generator", work_dir / "scripts")
-            hook(
-                sender="ScriptGeneratorAgent",
-                message=json.dumps(script_dict),
-                recipient=None,
-                silent=True,
-            )
-        except Exception as hook_error:
-            logger.warning(f"Failed to save script: {str(hook_error)}")
-            print(f"Warning: Failed to save script: {str(hook_error)}")
 
         return SwarmResult(
             values="Successfully generated this section of the podcast script. I'll look forward to the EditorAgent's review.",

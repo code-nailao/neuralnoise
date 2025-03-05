@@ -1,20 +1,20 @@
-from typing import Any, List, Dict, Optional
+from typing import Any
 from pydantic import BaseModel, Field
 
 
 class SharedContext(BaseModel):
     """Manages shared state for content processing and section management."""
 
-    content: Optional[str] = Field(
+    content: str | None = Field(
         default=None, description="The raw content being processed"
     )
-    content_analysis: Optional[Dict[str, Any]] = Field(
+    content_analysis: dict[str, Any] | None = Field(
         default=None, description="Analysis results of the processed content"
     )
-    sections: List[Dict[str, Any]] = Field(
+    sections: list[dict[str, Any]] = Field(
         default_factory=list, description="List of content sections with their metadata"
     )
-    section_scripts: Dict[int, Dict[str, Any]] = Field(
+    section_scripts: dict[int, dict[str, Any]] = Field(
         default_factory=dict,
         description="Mapping of section indices to their associated scripts",
     )
@@ -23,15 +23,15 @@ class SharedContext(BaseModel):
         description="Execution plans for the complete podcast, specifying all required sections",
     )
     current_section_index: int = Field(
-        default=0, description="Index of the currently active section"
+        default=1, description="Index of the currently active section"
     )
     is_complete: bool = Field(
         default=False, description="Flag indicating if processing is complete"
     )
-    errors: List[str] = Field(
+    errors: list[str] = Field(
         default_factory=list, description="List of errors encountered during processing"
     )
-    warnings: List[str] = Field(
+    warnings: list[str] = Field(
         default_factory=list, description="List of warnings generated during processing"
     )
 
@@ -43,7 +43,7 @@ class SharedContext(BaseModel):
         """
         self.content = content
 
-    def update_content_analysis(self, analysis: Dict[str, Any]) -> None:
+    def update_content_analysis(self, analysis: dict[str, Any]) -> None:
         """Update the content analysis results.
 
         Args:
@@ -51,7 +51,7 @@ class SharedContext(BaseModel):
         """
         self.content_analysis = analysis
 
-    def add_sections(self, sections: List[Dict[str, Any]]) -> None:
+    def add_sections(self, sections: list[dict[str, Any]]) -> None:
         """Add new sections to the state.
 
         Args:
@@ -60,7 +60,7 @@ class SharedContext(BaseModel):
         self.sections.extend(sections)
         self.current_section_index = len(self.sections) - 1
 
-    def update_section_script(self, script: Dict[str, Any]) -> None:
+    def update_section_script(self, script: dict[str, Any]) -> None:
         """Update the script for the current section.
 
         Args:
@@ -68,7 +68,7 @@ class SharedContext(BaseModel):
         """
         self.section_scripts[self.current_section_index] = script
 
-    def get_current_section(self) -> Dict[str, Any]:
+    def get_current_section(self) -> dict[str, Any]:
         """Get the currently active section.
 
         Returns:
@@ -94,7 +94,7 @@ class SharedContext(BaseModel):
         """
         self.warnings.append(warning_message)
 
-    def get_last_error(self) -> Optional[str]:
+    def get_last_error(self) -> str | None:
         """Get the most recent error message.
 
         Returns:
@@ -102,7 +102,7 @@ class SharedContext(BaseModel):
         """
         return self.errors[-1] if self.errors else None
 
-    def get_all_errors(self) -> List[str]:
+    def get_all_errors(self) -> list[str]:
         """Get all error messages.
 
         Returns:

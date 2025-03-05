@@ -3,22 +3,18 @@ AgentsManager module: Centralizes instantiation and handoff registration for swa
 It also defines a final workflow to run the swarm chat and extract the final results.
 """
 
-from pathlib import Path
 from typing import Sequence, Tuple
 
 from autogen import (
-    AfterWork,
     AfterWorkOption,
     AssistantAgent,
     ChatResult,
     ConversableAgent,
-    OnCondition,
-    UserProxyAgent,
     initiate_swarm_chat,
-    register_hand_off,
 )
 
 from neuralnoise.models import ContentAnalysis, PodcastScript
+from neuralnoise.prompt_manager import PromptManager, PromptType
 from neuralnoise.studio.agents.content_analyzer_agent import (
     create_content_analyzer_agent,
 )
@@ -33,21 +29,17 @@ from neuralnoise.studio.agents.script_generator_agent import (
 class AgentsManager:
     def __init__(
         self,
-        system_msgs: dict[str, str],
         llm_config: dict,
         language: str,
-        work_dir: Path,
     ) -> None:
         """
         Initialize the AgentsManager with required configuration parameters,
         instantiate all agents, and register handoffs.
 
         Args:
-            system_msgs (dict[str, str]): Dictionary with system messages for each agent.
             llm_config (dict): LLM configuration parameters.
             language (str): Language identifier for prompts.
         """
-        self.work_dir = work_dir
         self.language: str = language
         self.llm_config: dict = llm_config
         self.agents: dict[str, AssistantAgent] = {}
@@ -60,81 +52,30 @@ class AgentsManager:
         script_generator_llm_config = llm_config.copy()
         script_generator_llm_config["response_format"] = PodcastScript
 
+        self.prompt_manager = PromptManager(language=language)
+
         # Instantiate agents with placeholder next_agent dependencies.
         self.agents["PlannerAgent"] = create_planner_agent(
-            system_msg=system_msgs.get("PlannerAgent", ""),
+            system_msg=self.prompt_manager.get_prompt(PromptType.PLANNER),
             llm_config=llm_config,
         )
 
         self.agents["ContentAnalyzerAgent"] = create_content_analyzer_agent(
-            system_msg=system_msgs.get("ContentAnalyzerAgent", ""),
+            system_msg=self.prompt_manager.get_prompt(PromptType.CONTENT_ANALYZER),
             llm_config=content_analyzer_llm_config,  # Use the modified config with response_format
             language=language,
             next_agent=self.agents["PlannerAgent"],
         )
 
         self.agents["ScriptGeneratorAgent"] = create_script_generator_agent(
-            system_msg=system_msgs.get("ScriptGeneratorAgent", ""),
+            system_msg=self.prompt_manager.get_prompt(PromptType.SCRIPT_GENERATOR),
             llm_config=script_generator_llm_config,
-            work_dir=self.work_dir,
             next_agent="EditorAgent",
         )
 
         self.agents["EditorAgent"] = create_editor_agent(
-            system_msg=system_msgs.get("EditorAgent", ""),
+            system_msg=self.prompt_manager.get_prompt(PromptType.EDITOR),
             llm_config=llm_config,
-        )
-
-        # After all agents are created, register handoffs.
-        self.register_handoffs()
-
-    def register_handoffs(self) -> None:
-        """
-        Register handoffs between agents using OnCondition and AfterWork.
-        This defines the control flow between agents during the swarm chat.
-        """
-        # ContentAnalyzerAgent -> PlannerAgent
-        register_hand_off(
-            self.agents["ContentAnalyzerAgent"],
-            [
-                OnCondition(
-                    self.agents["PlannerAgent"],
-                    "After content analysis, transfer to planning",
-                )
-            ],
-        )
-        # PlannerAgent -> ScriptGeneratorAgent
-        register_hand_off(
-            self.agents["PlannerAgent"],
-            [
-                OnCondition(
-                    self.agents["ScriptGeneratorAgent"],
-                    "Always transfer to ScriptGeneratorAgent",
-                ),
-                AfterWork(agent=self.agents["ScriptGeneratorAgent"]),
-            ],
-        )
-        # ScriptGeneratorAgent -> EditorAgent
-        register_hand_off(
-            self.agents["ScriptGeneratorAgent"],
-            [
-                OnCondition(
-                    self.agents["EditorAgent"],
-                    "After writing a podcast section, always transfer to editor for review of the generated content",
-                ),
-                AfterWork(agent=self.agents["EditorAgent"]),
-            ],
-        )
-        # EditorAgent: if revisions needed, transfer back to ScriptGeneratorAgent; otherwise, if more sections exist, transfer to PlannerAgent.
-        register_hand_off(
-            self.agents["EditorAgent"],
-            [
-                OnCondition(
-                    self.agents["ScriptGeneratorAgent"],
-                    "If changes are required, transfer back to Script Generator",
-                ),
-                AfterWork(agent=self.agents["PlannerAgent"]),
-            ],
         )
 
     def run_swarm_chat(
@@ -166,6 +107,10 @@ class AgentsManager:
             agents=swarm_agents,
             messages=initial_message,
             context_variables=shared_state.model_dump(),
+            swarm_manager_args={
+                "system_message": self.prompt_manager.get_prompt(PromptType.MANAGER),
+                "llm_config": self.llm_config,
+            },
             after_work=AfterWorkOption.SWARM_MANAGER,
             max_rounds=100,
         )

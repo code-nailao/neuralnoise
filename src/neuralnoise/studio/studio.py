@@ -1,19 +1,17 @@
 import hashlib
-import os
 import json
+import os
 from pathlib import Path
-from string import Template
 from typing import Any
 
+from autogen import ChatResult
 from pydub import AudioSegment
 from pydub.effects import normalize
 from tqdm.auto import tqdm
 
-import yaml
-from autogen import ChatResult
 from neuralnoise.models import StudioConfig
+from neuralnoise.prompt_manager import PromptManager, PromptType
 from neuralnoise.studio.agents.agents_manager import AgentsManager
-from neuralnoise.studio.agents.context_manager import SharedContext
 from neuralnoise.tts import generate_audio_segment
 from neuralnoise.utils import package_root
 
@@ -51,62 +49,26 @@ class PodcastStudio:
         self.language = config.show.language
         self.max_round = max_round
 
-        # Load system prompts
+        # Initialize the prompt manager
         prompts_dir = (
             config.prompts_dir if config.prompts_dir else package_root / "prompts"
         )
-        self.system_msgs = self._load_system_messages(prompts_dir)
-
-        # Create agents manager
-        self.agents_manager = AgentsManager(
-            system_msgs=self.system_msgs,
-            llm_config=self._load_llm_config(),
-            work_dir=self.work_dir,
+        self.prompt_manager = PromptManager(
+            prompts_dir=prompts_dir,
             language=self.language,
         )
-
-    def _load_system_messages(self, prompts_dir: Path) -> dict[str, str]:
-        """Load all system messages from prompts directory."""
-        system_msgs = {}
-
-        # Load built-in system messages
-        system_msgs["ContentAnalyzerAgent"] = self.load_prompt_file(
-            prompts_dir / "content_analyzer.system.xml", language=self.language
-        )
-        system_msgs["PlannerAgent"] = self.load_prompt_file(
-            prompts_dir / "planner.system.xml", language=self.language
-        )
-        system_msgs["ScriptGeneratorAgent"] = self.load_prompt_file(
-            prompts_dir / "script_generation.system.xml",
-            language=self.language,
+        self.prompt_manager.update_prompts(
             min_segments=str(self.config.show.min_segments),
             max_segments=str(self.config.show.max_segments),
-        )
-        system_msgs["EditorAgent"] = self.load_prompt_file(
-            prompts_dir / "editor.system.xml", language=self.language
-        )
-        system_msgs["UserMessage"] = self.load_prompt_file(
-            prompts_dir / "user_proxy.message.xml",
-            content="$content",
             show=self.config.show.model_dump_json(),
             speakers=str(self.config.speakers),
         )
 
-        return system_msgs
-
-    def load_prompt_file(self, path: Path, **kwargs: str) -> str:
-        """Load a prompt from a file and substitute variables."""
-        if not path.exists():
-            return ""
-
-        with open(path, "r", encoding="utf-8") as f:
-            content = f.read()
-
-        if kwargs:
-            template = Template(content)
-            content = template.safe_substitute(kwargs)
-
-        return content
+        # Create agents manager with the required parameters
+        self.agents_manager = AgentsManager(
+            llm_config=self._load_llm_config(),
+            language=self.language,
+        )
 
     def _load_llm_config(self) -> dict:
         """Load LLM configuration."""
@@ -119,14 +81,6 @@ class PodcastStudio:
             ]
         }
 
-    def load_prompt(self, prompt_name: str, **kwargs: str) -> str:
-        """Load and substitute a prompt from the prompts directory."""
-        content = self.system_msgs.get(prompt_name, "")
-        if content and kwargs:
-            template = Template(content)
-            content = template.safe_substitute(kwargs)
-        return content
-
     def generate_script(self, content: str) -> dict[str, Any]:
         """Generate a podcast script using AgentsManager and return the final script and chat log."""
         # For debugging
@@ -134,28 +88,22 @@ class PodcastStudio:
         print(f"DEBUG - Content preview: {content[:100] if content else 'None'}")
 
         # Prepare initial message using the user message template with content properly embedded
-        if "$content" in self.system_msgs["UserMessage"]:
-            initial_message = self.system_msgs["UserMessage"].replace(
-                "$content", content
-            )
-        else:
-            # If no $content placeholder, just pass the content directly
-            initial_message = content
+        self.prompt_manager.update_prompt(PromptType.USER_MESSAGE, content=content)
+        initial_message = self.prompt_manager.get_prompt(PromptType.USER_MESSAGE)
 
         # For debugging
         print(f"DEBUG - Initial message length: {len(initial_message)}")
         print(f"DEBUG - Initial message preview: {initial_message[:100]}")
 
-        # Explicitly create a content-loaded shared state
-        shared_state = SharedContext()
-        shared_state.update_content(content)
-
-        chat_result, shared_state, last_agent = self.agents_manager.run_swarm_chat(
+        chat_result, final_state, _ = self.agents_manager.run_swarm_chat(
             initial_message
         )
 
+        with open(self.work_dir / "final_state.json", "w") as f:
+            json.dump(final_state.model_dump(), f, indent=4)
+
         script_data = {
-            "sections": shared_state.section_scripts,
+            "sections": final_state.section_scripts,
             "messages": chat_result,
         }
 

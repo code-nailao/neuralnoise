@@ -1,6 +1,6 @@
 [project]
 name = "neuralnoise"
-version = "2.0.0"
+version = "2.0.1"
 description = "An AI-powered podcast studio that uses multiple AI agents working together."
 authors = [
     { name = "Leonardo Piñeyro", email = "leopiney@gmail.com" }
@@ -10,7 +10,7 @@ readme = "README.md"
 license = { file = "LICENSE" }
 
 keywords = [
-  "ai", "podcast", "notebooklm", "autogen", "ai audio generation", "generative ai"
+  "ai", "podcast", "notebooklm", "ag2", "autogen", "ai audio generation", "generative ai"
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -36,6 +36,7 @@ dependencies = [
     "beautifulsoup4>=4.12.3",
     "crawl4ai==0.4.0",
     "elevenlabs>=1.10.0",
+    "hume[microphone]>=0.4.2",
     "langchain-community>=0.3.3",
     "lxml>=5.3.0",
     "openai>=1.52.2",

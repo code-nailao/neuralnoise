@@ -15,7 +15,7 @@ class VoiceSettings(BaseModel):
 class SpeakerSettings(BaseModel):
     voice_id: str
 
-    provider: Literal["elevenlabs", "openai"] = "elevenlabs"
+    provider: Literal["elevenlabs", "openai", "hume"] = "elevenlabs"
     voice_model: Literal["eleven_multilingual_v2", "tts-1", "tts-1-hd"] = (
         "eleven_multilingual_v2"
     )
