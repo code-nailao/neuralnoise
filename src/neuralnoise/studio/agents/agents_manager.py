@@ -10,6 +10,7 @@ from autogen import (
     AssistantAgent,
     ChatResult,
     ConversableAgent,
+    UserProxyAgent,
     initiate_swarm_chat,
 )
 
@@ -46,7 +47,6 @@ class AgentsManager:
 
         self.prompt_manager = PromptManager(language=language)
 
-        # Instantiate agents with placeholder next_agent dependencies.
         self.agents["PlannerAgent"] = create_planner_agent(
             system_msg=self.prompt_manager.get_prompt(PromptType.PLANNER),
             llm_config=llm_config,
@@ -58,7 +58,6 @@ class AgentsManager:
             system_msg=self.prompt_manager.get_prompt(PromptType.CONTENT_ANALYZER),
             llm_config=content_analyzer_llm_config,  # Use the modified config with response_format
             language=language,
-            next_agent=self.agents["PlannerAgent"],
         )
 
         script_generator_llm_config = llm_config.copy()
@@ -66,7 +65,6 @@ class AgentsManager:
         self.agents["ScriptGeneratorAgent"] = create_script_generator_agent(
             system_msg=self.prompt_manager.get_prompt(PromptType.SCRIPT_GENERATOR),
             llm_config=script_generator_llm_config,
-            next_agent="EditorAgent",
         )
 
         self.agents["EditorAgent"] = create_editor_agent(
@@ -97,14 +95,21 @@ class AgentsManager:
         # Prepare list of agents.
         swarm_agents: Sequence[ConversableAgent] = list(self.agents.values())
 
+        user_proxy = UserProxyAgent(
+            name="UserProxyAgent",
+            human_input_mode="NEVER",
+            code_execution_config=False,
+        )
+
         # Initiate swarm chat starting with the ContentAnalyzerAgent.
         chat_result, final_context, last_agent = initiate_swarm_chat(
             initial_agent=self.agents["ContentAnalyzerAgent"],
             agents=swarm_agents,
             messages=initial_message,
             context_variables=shared_state.model_dump(),
+            user_agent=user_proxy,
             swarm_manager_args={
-                "human_input_mode": "Never",
+                "human_input_mode": "NEVER",
                 "system_message": self.prompt_manager.get_prompt(PromptType.MANAGER),
                 "llm_config": self.llm_config,
             },

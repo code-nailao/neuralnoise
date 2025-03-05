@@ -10,7 +10,6 @@ def create_content_analyzer_agent(
     system_msg: str,
     llm_config: dict,
     language: str,
-    next_agent: AssistantAgent | None,
 ) -> AssistantAgent:
     """Create and return a ContentAnalyzerAgent for analyzing content."""
 
@@ -26,49 +25,28 @@ def create_content_analyzer_agent(
         )
 
     def save_content_analysis(
-        content_analysis: dict[str, Any] | ContentAnalysis | None = None,
-        context_variables: dict = {},
+        content_analysis: dict[str, Any] | ContentAnalysis,
+        context_variables: dict,
     ) -> SwarmResult:
         """This function saves result of the agent getting the content analysis
         to the shared state."""
-        if not context_variables:
+        if not content_analysis:
             return SwarmResult(
-                values="Error: Missing context_variables",
+                values="Error: Missing content_analysis",
                 agent=None,
-                context_variables={},
+                context_variables=context_variables,
             )
 
         shared_state = SharedContext.model_validate(context_variables)
-
-        # If content_analysis was not provided directly, check if we have content to analyze
-        if content_analysis is None:
-            if shared_state.content:
-                # Return this message to inform that analysis is needed
-                return SwarmResult(
-                    values="Content provided. Please analyze and provide a ContentAnalysis according to the defined schema.",
-                    agent=None,  # Stay with the current agent to get proper analysis
-                    context_variables=shared_state.model_dump(),
-                )
-            else:
-                # We can't proceed without content and analysis
-                return SwarmResult(
-                    values="Error: Missing content. Please provide content to analyze.",
-                    agent=None,
-                    context_variables=shared_state.model_dump(),
-                )
-
-        if isinstance(content_analysis, ContentAnalysis):
-            validated_analysis = content_analysis.model_dump()
-        else:
-            validated_analysis = ContentAnalysis.model_validate(
-                content_analysis
-            ).model_dump()
+        validated_analysis = ContentAnalysis.model_validate(
+            content_analysis
+        ).model_dump()
 
         shared_state.content_analysis = validated_analysis
 
         return SwarmResult(
             values="Content analysis successfully validated and saved. Moving to next agent.",
-            agent=next_agent,
+            agent="PlannerAgent",
             context_variables=shared_state.model_dump(),
         )
 

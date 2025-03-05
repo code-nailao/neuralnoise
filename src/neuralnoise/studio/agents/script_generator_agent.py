@@ -10,7 +10,6 @@ from neuralnoise.studio.agents.context_manager import SharedContext
 def create_script_generator_agent(
     system_msg: str,
     llm_config: dict,
-    next_agent: AssistantAgent | str | None = None,
 ) -> AssistantAgent:
     """Create and return a ScriptGeneratorAgent that writes a section script.
 
@@ -53,7 +52,7 @@ def create_script_generator_agent(
         return SwarmResult(
             values="Successfully generated this section of the podcast script. I'll look forward to the EditorAgent's review.",
             context_variables=shared_state.model_dump(),
-            agent=next_agent,
+            agent="EditorAgent",
         )
 
     # Create and return the agent
