@@ -57,17 +57,20 @@ class PodcastStudio:
             prompts_dir=prompts_dir,
             language=self.language,
         )
+
+        config_dict = self.config.model_dump()
         self.prompt_manager.update_prompts(
             min_segments=str(self.config.show.min_segments),
             max_segments=str(self.config.show.max_segments),
-            show=self.config.show.model_dump_json(),
-            speakers=str(self.config.speakers),
+            show=json.dumps(config_dict["show"], indent=2),
+            speakers=json.dumps(config_dict["speakers"], indent=2),
         )
 
         # Create agents manager with the required parameters
         self.agents_manager = AgentsManager(
             llm_config=self._load_llm_config(),
             language=self.language,
+            work_dir=self.work_dir,
         )
 
     def _load_llm_config(self) -> dict:
@@ -87,8 +90,17 @@ class PodcastStudio:
         print(f"DEBUG - Content length: {len(content) if content else 0}")
         print(f"DEBUG - Content preview: {content[:100] if content else 'None'}")
 
+        #
+        # WIP: adapt the DocumentAgent to handle the content directly.
+        # For now, we're in charge of the content extraction
+        #
+        content_path = self.work_dir / "content.md"
+
         # Prepare initial message using the user message template with content properly embedded
-        self.prompt_manager.update_prompt(PromptType.USER_MESSAGE, content=content)
+        self.prompt_manager.update_prompt(
+            PromptType.USER_MESSAGE,
+            content_path=content_path,
+        )
         initial_message = self.prompt_manager.get_prompt(PromptType.USER_MESSAGE)
 
         # For debugging

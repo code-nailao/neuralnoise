@@ -3,8 +3,7 @@ from typing import Any
 
 from autogen import AssistantAgent, SwarmResult
 
-from neuralnoise.models import PodcastScript
-from neuralnoise.studio.agents.context_manager import SharedContext
+from neuralnoise.models import PodcastScript, SharedContext
 
 
 def create_script_generator_agent(
@@ -22,6 +21,19 @@ def create_script_generator_agent(
         AssistantAgent: The configured script generator agent
     """
     logger = logging.getLogger(__name__)
+
+    def ask_content_summarizer_agent(
+        question: str,
+        context_variables: dict[str, Any] = {},
+    ) -> SwarmResult:
+        """Ask the ContentSummarizerAgent for any relevant information to make the script more accurate."""
+        logger.info("Asking ContentSummarizerAgent for any relevant information")
+
+        return SwarmResult(
+            values=f"ContentSummarizerAgent, I need to know more about this question: {question}",
+            context_variables=context_variables,
+            agent="ContentSummarizerAgent",
+        )
 
     def write_podcast_section_script(
         podcast_script: PodcastScript | dict[str, Any],
@@ -60,6 +72,6 @@ def create_script_generator_agent(
         name="ScriptGeneratorAgent",
         system_message=system_msg,
         llm_config=llm_config,
-        functions=[write_podcast_section_script],
+        functions=[ask_content_summarizer_agent, write_podcast_section_script],
     )
     return agent

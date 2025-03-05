@@ -3,23 +3,26 @@ AgentsManager module: Centralizes instantiation and handoff registration for swa
 It also defines a final workflow to run the swarm chat and extract the final results.
 """
 
+import uuid
+from pathlib import Path
 from typing import Sequence, Tuple
 
 from autogen import (
     AfterWorkOption,
-    AssistantAgent,
     ChatResult,
     ConversableAgent,
+    OnCondition,
     UserProxyAgent,
     initiate_swarm_chat,
+    register_hand_off,
 )
+from autogen.agents.experimental.document_agent import DocAgent as DocumentAgent
 
-from neuralnoise.models import ContentAnalysis, PodcastScript
+from neuralnoise.models import ContentAnalysis, PodcastScript, SharedContext
 from neuralnoise.prompt_manager import PromptManager, PromptType
 from neuralnoise.studio.agents.content_analyzer_agent import (
     create_content_analyzer_agent,
 )
-from neuralnoise.studio.agents.context_manager import SharedContext
 from neuralnoise.studio.agents.editor_agent import create_editor_agent
 from neuralnoise.studio.agents.planner_agent import create_planner_agent
 from neuralnoise.studio.agents.script_generator_agent import (
@@ -32,6 +35,7 @@ class AgentsManager:
         self,
         llm_config: dict,
         language: str,
+        work_dir: Path | None = None,
     ) -> None:
         """
         Initialize the AgentsManager with required configuration parameters,
@@ -43,7 +47,8 @@ class AgentsManager:
         """
         self.language: str = language
         self.llm_config: dict = llm_config
-        self.agents: dict[str, AssistantAgent] = {}
+        self.work_dir = work_dir
+        self.agents: dict[str, ConversableAgent] = {}
 
         self.prompt_manager = PromptManager(language=language)
 
@@ -52,12 +57,29 @@ class AgentsManager:
             llm_config=llm_config,
         )
 
+        random_id = str(uuid.uuid4())
+
+        self.agents["ContentSummarizerAgent"] = DocumentAgent(
+            name="ContentSummarizerAgent",
+            llm_config=llm_config,
+            collection_name=f"document_content_{random_id}",
+            parsed_docs_path=self.work_dir / "parsed_docs" if self.work_dir else None,
+        )
+
         content_analyzer_llm_config = llm_config.copy()
         content_analyzer_llm_config["response_format"] = ContentAnalysis
         self.agents["ContentAnalyzerAgent"] = create_content_analyzer_agent(
             system_msg=self.prompt_manager.get_prompt(PromptType.CONTENT_ANALYZER),
-            llm_config=content_analyzer_llm_config,  # Use the modified config with response_format
+            llm_config=content_analyzer_llm_config,
             language=language,
+        )
+
+        register_hand_off(
+            agent=self.agents["ContentSummarizerAgent"],
+            hand_to=OnCondition(
+                target=self.agents["ContentAnalyzerAgent"],
+                condition="Summary is created and ready to analyze by the ContentAnalyzerAgent",
+            ),
         )
 
         script_generator_llm_config = llm_config.copy()
@@ -88,10 +110,6 @@ class AgentsManager:
         # Instantiate shared state.
         shared_state = SharedContext()
 
-        # Initialize content from initial message if not already set
-        if not shared_state.content and initial_message:
-            shared_state.content = initial_message
-
         # Prepare list of agents.
         swarm_agents: Sequence[ConversableAgent] = list(self.agents.values())
 
@@ -103,7 +121,7 @@ class AgentsManager:
 
         # Initiate swarm chat starting with the ContentAnalyzerAgent.
         chat_result, final_context, last_agent = initiate_swarm_chat(
-            initial_agent=self.agents["ContentAnalyzerAgent"],
+            initial_agent=self.agents["ContentSummarizerAgent"],
             agents=swarm_agents,
             messages=initial_message,
             context_variables=shared_state.model_dump(),

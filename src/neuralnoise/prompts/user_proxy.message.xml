@@ -1,16 +1,23 @@
-<user-message>
-  <task>
-    Create a podcast script based on the provided context and using the specified speakers.
-  </task>
-  <input-parameters>
-    <show>${show}</show>
-    <speakers>${speakers}</speakers>
-    <content>${content}</content>
-  </input-parameters>
-  <process-steps>
-    Coordinate content analysis, planning, script generation, and editing until the script is complete.
-  </process-steps>
-  <guidelines>
-    Ensure that each agent receives the necessary information and keep track of progress. Be attentive to the TERMINATE signal from the Planner to end the process.
-  </guidelines>
-</user-message>
+# Task
+
+Please summarize the content of the file ${content_path} to extract key information. Don't miss
+important details. Only process this file, nothing else.
+
+Make sure to keep the content in the context variables!
+
+# Queries
+
+- Extract all the titles from the content
+- Make questions about the titles to extract all key information
+- Provide a summary of all the extracted content
+
+
+# Podcast information
+
+## Show
+
+${show}
+
+## Speakers
+
+${speakers}

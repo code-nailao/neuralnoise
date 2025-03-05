@@ -2,7 +2,7 @@ from typing import Any
 
 from autogen import AssistantAgent, SwarmResult
 
-from neuralnoise.studio.agents.context_manager import SharedContext
+from neuralnoise.models import SharedContext
 
 
 def create_planner_agent(system_msg: str, llm_config: dict) -> AssistantAgent:
@@ -40,11 +40,26 @@ def create_planner_agent(system_msg: str, llm_config: dict) -> AssistantAgent:
             context_variables=shared_state.model_dump(),
         )
 
+    def wrap_up_podcast(
+        context_variables: dict[str, Any],
+    ) -> SwarmResult:
+        """Wrap up the podcast and save the final script if you're done or created a conclusion section."""
+        shared_state = SharedContext.model_validate(context_variables)
+
+        return SwarmResult(
+            values="Terminate the process and wrap up the podcast.",
+            context_variables=shared_state.model_dump(),
+        )
+
     agent = AssistantAgent(
         name="PlannerAgent",
         system_message=system_msg,
         llm_config=llm_config,
-        functions=[generate_execution_plan, update_current_section_index],
+        functions=[
+            generate_execution_plan,
+            update_current_section_index,
+            wrap_up_podcast,
+        ],
     )
 
     return agent

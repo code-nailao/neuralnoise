@@ -3,7 +3,7 @@ from typing import Any
 
 from autogen import SwarmResult
 
-from neuralnoise.studio.agents.context_manager import SharedContext
+from neuralnoise.models import SharedContext
 
 
 def create_editor_agent(

@@ -10,6 +10,10 @@
     </instructions>
   </output-format>
 
+  <additional-information>
+    Ask any relevant information from the ContentSummarizerAgent to make the script more accurate.
+  </additional-information>
+
   <instructions>
     <instruction>Follow the PlannerAgent's instructions for each section.</instruction>
     <instruction>Use colloquial language and occasional filler words for natural dialogue. For
