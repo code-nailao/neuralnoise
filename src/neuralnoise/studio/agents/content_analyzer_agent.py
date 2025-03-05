@@ -17,7 +17,7 @@ def create_content_analyzer_agent(
     def save_original_content(content: str, context_variables: dict) -> SwarmResult:
         """This function saves the original content to the shared state."""
         shared_state = SharedContext.model_validate(context_variables)
-        shared_state.update_content(content)
+        shared_state.content = content
 
         return SwarmResult(
             values=content,
@@ -64,7 +64,7 @@ def create_content_analyzer_agent(
                 content_analysis
             ).model_dump()
 
-        shared_state.update_content_analysis(validated_analysis)
+        shared_state.content_analysis = validated_analysis
 
         return SwarmResult(
             values="Content analysis successfully validated and saved. Moving to next agent.",

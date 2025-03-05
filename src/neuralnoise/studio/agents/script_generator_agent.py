@@ -47,7 +47,8 @@ def create_script_generator_agent(
             script_dict = PodcastScript.model_validate(podcast_script).model_dump()
 
         # Update the shared context with the generated script
-        shared_state.update_section_script(script_dict)
+        section_id = script_dict["section_id"]
+        shared_state.section_scripts[section_id] = script_dict
 
         return SwarmResult(
             values="Successfully generated this section of the podcast script. I'll look forward to the EditorAgent's review.",

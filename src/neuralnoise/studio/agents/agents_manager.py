@@ -44,14 +44,6 @@ class AgentsManager:
         self.llm_config: dict = llm_config
         self.agents: dict[str, AssistantAgent] = {}
 
-        # Create a specific LLM config for ContentAnalyzerAgent with structured output
-        content_analyzer_llm_config = llm_config.copy()
-        content_analyzer_llm_config["response_format"] = ContentAnalysis
-
-        # Create a specific LLM config for ScriptGeneratorAgent with structured output
-        script_generator_llm_config = llm_config.copy()
-        script_generator_llm_config["response_format"] = PodcastScript
-
         self.prompt_manager = PromptManager(language=language)
 
         # Instantiate agents with placeholder next_agent dependencies.
@@ -60,6 +52,8 @@ class AgentsManager:
             llm_config=llm_config,
         )
 
+        content_analyzer_llm_config = llm_config.copy()
+        content_analyzer_llm_config["response_format"] = ContentAnalysis
         self.agents["ContentAnalyzerAgent"] = create_content_analyzer_agent(
             system_msg=self.prompt_manager.get_prompt(PromptType.CONTENT_ANALYZER),
             llm_config=content_analyzer_llm_config,  # Use the modified config with response_format
@@ -67,6 +61,8 @@ class AgentsManager:
             next_agent=self.agents["PlannerAgent"],
         )
 
+        script_generator_llm_config = llm_config.copy()
+        script_generator_llm_config["response_format"] = PodcastScript
         self.agents["ScriptGeneratorAgent"] = create_script_generator_agent(
             system_msg=self.prompt_manager.get_prompt(PromptType.SCRIPT_GENERATOR),
             llm_config=script_generator_llm_config,
@@ -96,7 +92,7 @@ class AgentsManager:
 
         # Initialize content from initial message if not already set
         if not shared_state.content and initial_message:
-            shared_state.update_content(initial_message)
+            shared_state.content = initial_message
 
         # Prepare list of agents.
         swarm_agents: Sequence[ConversableAgent] = list(self.agents.values())
@@ -108,11 +104,12 @@ class AgentsManager:
             messages=initial_message,
             context_variables=shared_state.model_dump(),
             swarm_manager_args={
+                "human_input_mode": "Never",
                 "system_message": self.prompt_manager.get_prompt(PromptType.MANAGER),
                 "llm_config": self.llm_config,
             },
             after_work=AfterWorkOption.SWARM_MANAGER,
-            max_rounds=100,
+            max_rounds=200,
         )
 
         # Update shared state with final context.

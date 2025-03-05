@@ -5,9 +5,7 @@ from autogen import AssistantAgent, SwarmResult
 from neuralnoise.studio.agents.context_manager import SharedContext
 
 
-def create_planner_agent(
-    system_msg: str, llm_config: dict, next_agent: AssistantAgent | None = None
-) -> AssistantAgent:
+def create_planner_agent(system_msg: str, llm_config: dict) -> AssistantAgent:
     """Create and return a PlannerAgent that generates a sections plan based on
     content analysis."""
 
@@ -23,7 +21,7 @@ def create_planner_agent(
 
         return SwarmResult(
             values=execution_plans,
-            agent=None,
+            agent="ScriptGeneratorAgent",
             context_variables=shared_state.model_dump(),
         )
 
@@ -37,8 +35,8 @@ def create_planner_agent(
         shared_state.current_section_index = section_index
 
         return SwarmResult(
-            values=str(section_index),
-            agent=None,
+            values="Execute the plan and generate the next section of the podcast script.",
+            agent="ScriptGeneratorAgent",
             context_variables=shared_state.model_dump(),
         )
 
