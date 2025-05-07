@@ -44,6 +44,9 @@ class BaseModelDisplay(BaseModel):
 class Speaker(BaseModelDisplay):
     name: str
     about: str
+    role: str | None = None
+    relationship_with_others: str | None = None
+    character_tags: list[str] | None = None
 
     settings: SpeakerSettings
 
@@ -52,6 +55,8 @@ class Show(BaseModelDisplay):
     name: str
     about: str
     language: str
+    target_audience: str | None = None
+    tone: str | None = None
 
     min_segments: int = 4
     max_segments: int = 10
@@ -67,7 +72,16 @@ class StudioConfig(BaseModelDisplay):
 
     def render_speakers_details(self) -> str:
         return "\n\n".join(
-            speaker.render(speaker_id, ["name", "about"])
+            speaker.render(
+                speaker_id,
+                [
+                    "name",
+                    "role",
+                    "about",
+                    "relationship_with_others",
+                    "character_tags"
+                ],
+            )
             for speaker_id, speaker in self.speakers.items()
         )
 

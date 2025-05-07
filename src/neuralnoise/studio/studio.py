@@ -62,8 +62,8 @@ class PodcastStudio:
         self.prompt_manager.update_prompts(
             min_segments=str(self.config.show.min_segments),
             max_segments=str(self.config.show.max_segments),
-            show=json.dumps(config_dict["show"], indent=2),
-            speakers=json.dumps(config_dict["speakers"], indent=2),
+            show=json.dumps(config_dict["show"], indent=2, ensure_ascii=False),
+            speakers=json.dumps(config_dict["speakers"], indent=2, ensure_ascii=False),
         )
 
         # Create agents manager with the required parameters
@@ -78,7 +78,7 @@ class PodcastStudio:
         return {
             "config_list": [
                 {
-                    "model": "gpt-4o",
+                    "model": "gpt-4o-mini",
                     "api_key": os.environ.get("OPENAI_API_KEY", ""),
                 }
             ]
