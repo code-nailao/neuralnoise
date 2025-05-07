@@ -48,7 +48,7 @@ def generate(
     content_path = output_dir / "content.md"
 
     if content_path.exists():
-        with open(content_path, "r") as f:
+        with open(content_path, "r", encoding="utf-8") as f:
             content = f.read()
     else:
         if input is None:
@@ -61,7 +61,7 @@ def generate(
         typer.secho(f"Extracting content from inputs {input}", fg=typer.colors.YELLOW)
         content = extract_content(input)
 
-        with open(content_path, "w") as f:
+        with open(content_path, "w", encoding="utf-8") as f:
             f.write(content)
 
     typer.secho(f"Generating podcast episode {name}", fg=typer.colors.GREEN)

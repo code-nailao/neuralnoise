@@ -36,7 +36,7 @@ def generate_podcast_episode(
     # Load configuration
     if config_path:
         logger.info("🔧  Loading configuration from %s", config_path)
-        with open(config_path, "r") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             config = StudioConfig.model_validate_json(f.read())
 
     if not config:
@@ -49,12 +49,12 @@ def generate_podcast_episode(
 
     if script_path.exists():
         logger.info("💬  Loading cached script")
-        script = json.loads(script_path.read_text())
+        script = json.loads(script_path.read_text(encoding="utf-8"))
     else:
         logger.info("💬  Generating podcast script")
         script = studio.generate_script(content)
 
-        script_path.write_text(json.dumps(script, ensure_ascii=False))
+        script_path.write_text(json.dumps(script, ensure_ascii=False), encoding="utf-8")
 
     if only_script:
         return None

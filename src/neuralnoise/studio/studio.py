@@ -78,10 +78,11 @@ class PodcastStudio:
         return {
             "config_list": [
                 {
-                    "model": "gpt-4o",
+                    "model": "gpt-4o-mini",
                     "api_key": os.environ.get("OPENAI_API_KEY", ""),
                 }
-            ]
+            ],
+            "timeout": 300  # 设置超时时间为300秒（5分钟）
         }
 
     def generate_script(self, content: str) -> dict[str, Any]:
