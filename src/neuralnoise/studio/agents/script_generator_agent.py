@@ -38,16 +38,22 @@ def create_script_generator_agent(
     def write_podcast_section_script(
         podcast_script: PodcastScript | dict[str, Any],
         context_variables: dict[str, Any] = {},
+        **kwargs
     ) -> SwarmResult:
         """Writes and saves a generated PodcastScript to the shared context.
 
         Args:
             podcast_script: The generated podcast script
             context_variables: The shared context variables
+            **kwargs: Catches any unexpected keyword arguments from the LLM call.
 
         Returns:
             SwarmResult: Result containing success message and next agent
         """
+        # Log if unexpected kwargs are received, for debugging purposes
+        if kwargs:
+            logger.warning(f"write_podcast_section_script received unexpected keyword arguments: {kwargs}")
+            
         logger.info("Writing script to shared context")
         shared_state = SharedContext.model_validate(context_variables)
 

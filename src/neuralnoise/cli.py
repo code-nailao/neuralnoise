@@ -2,6 +2,38 @@ import logging
 import shutil
 from pathlib import Path
 
+# --- LLM Call Logger Name Setup ---
+EVENT_LOGGER_NAME = None
+FOUND_LOGGER_NAME_VIA = "default"
+
+try:
+    from autogen.runtime_logging import EVENT_LOGGER_NAME
+    FOUND_LOGGER_NAME_VIA = "autogen.runtime_logging"
+except ImportError:
+    try:
+        from autogen.events.logging import EVENT_LOGGER_NAME
+        FOUND_LOGGER_NAME_VIA = "autogen.events.logging"
+    except ImportError:
+        try:
+            from autogen.logging import EVENT_LOGGER_NAME
+            FOUND_LOGGER_NAME_VIA = "autogen.logging"
+        except ImportError:
+            try:
+                from autogen_core.logging import EVENT_LOGGER_NAME
+                FOUND_LOGGER_NAME_VIA = "autogen_core.logging"
+            except ImportError:
+                EVENT_LOGGER_NAME = "autogen.events" # Default fallback
+                print(f"Warning: Could not import EVENT_LOGGER_NAME from known paths. Defaulting to '{EVENT_LOGGER_NAME}'. LLM call logging might not work as expected.", flush=True)
+
+if EVENT_LOGGER_NAME:
+     print(f"INFO: Using EVENT_LOGGER_NAME='{EVENT_LOGGER_NAME}' found via '{FOUND_LOGGER_NAME_VIA}' for LLM call logging.", flush=True)
+
+import json
+
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+# --- End Logger Name Setup ---
+
 import typer
 from dotenv import load_dotenv
 from pydub import AudioSegment
@@ -40,6 +72,52 @@ def generate(
 
     nn generate <url|file> [<url|file>...] --name <name> --config config/config_openai.json
     """
+    # --- LLM Call Logging Setup for this specific run ---
+    log_file_path = LOG_DIR / f"{name}_llm_calls.log"
+    
+    # Define formatter once
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+    
+    # Create the file handler
+    file_handler = logging.FileHandler(log_file_path, encoding='utf-8')
+    file_handler.setFormatter(formatter)
+    
+    loggers_to_configure = []
+    if EVENT_LOGGER_NAME:
+        loggers_to_configure.append(EVENT_LOGGER_NAME)
+    else:
+        # If import failed, EVENT_LOGGER_NAME is our fallback string
+        loggers_to_configure.append("autogen.events") 
+
+    # --- Diagnostic Step: Also add handler to root 'autogen' logger ---
+    # This might capture events if they are logged elsewhere in the library
+    # and propagate. Avoid adding the handler twice if EVENT_LOGGER_NAME *is* 'autogen'.
+    if "autogen" not in loggers_to_configure:
+        loggers_to_configure.append("autogen")
+    # --- End Diagnostic Step ---
+
+    for logger_name in loggers_to_configure:
+        logger_instance = logging.getLogger(logger_name)
+        # Set level to DEBUG to capture LLMCallEvent / other details
+        # Setting level on the logger itself is important
+        logger_instance.setLevel(logging.DEBUG) 
+
+        # Check if this specific logger already has an identical handler
+        handler_exists_for_logger = any(
+            isinstance(h, logging.FileHandler) and h.baseFilename == str(log_file_path)
+            for h in logger_instance.handlers
+        )
+
+        if not handler_exists_for_logger:
+            print(f"INFO: Attaching file handler to logger '{logger_name}' for path: {log_file_path}", flush=True)
+            logger_instance.addHandler(file_handler)
+            # Optional: Control propagation if needed, usually default (True) is fine unless duplicating logs
+            # logger_instance.propagate = False 
+        else:
+             print(f"INFO: File handler for {log_file_path} already exists on logger '{logger_name}'. Skipping add.", flush=True)
+
+    # --- End LLM Call Logging Setup ---
+
     typer.secho(f"Generating podcast episode {name}", fg=typer.colors.GREEN)
 
     output_dir = Path("output") / name

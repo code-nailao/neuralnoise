@@ -62,8 +62,8 @@ class PodcastStudio:
         self.prompt_manager.update_prompts(
             min_segments=str(self.config.show.min_segments),
             max_segments=str(self.config.show.max_segments),
-            show=json.dumps(config_dict["show"], indent=2),
-            speakers=json.dumps(config_dict["speakers"], indent=2),
+            show=json.dumps(config_dict["show"], indent=2, ensure_ascii=False),
+            speakers=json.dumps(config_dict["speakers"], indent=2, ensure_ascii=False),
         )
 
         # Create agents manager with the required parameters
@@ -112,8 +112,8 @@ class PodcastStudio:
             initial_message
         )
 
-        with open(self.work_dir / "final_state.json", "w") as f:
-            json.dump(final_state.model_dump(), f, indent=4)
+        with open(self.work_dir / "final_state.json", "w", encoding="utf-8") as f:
+            json.dump(final_state.model_dump(), f, indent=4, ensure_ascii=False)
 
         script_data = {
             "sections": final_state.section_scripts,
@@ -121,7 +121,7 @@ class PodcastStudio:
         }
 
         # Use custom encoder for JSON serialization
-        return json.loads(json.dumps(script_data, cls=ChatResultEncoder))
+        return json.loads(json.dumps(script_data, cls=ChatResultEncoder, ensure_ascii=False))
 
     def generate_podcast_from_script(self, script: dict[str, Any]) -> AudioSegment:
         """Generate the podcast audio from the script using TTS."""
